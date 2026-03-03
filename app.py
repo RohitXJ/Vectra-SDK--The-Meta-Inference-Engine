@@ -3,6 +3,7 @@ import torch
 import os
 import json
 from data.IO import get_data
+from core.backbone import get_encoder
 
 config = {
     "n_way" : 2,
@@ -14,8 +15,10 @@ config = {
 
 def main(config):
     support_data, query_data, format = get_data(config["support"], config["query"])
-    
-    
+    print("Data Retrieval Success!")
+    encoder = get_encoder(config["backbone"], format)
+    print(encoder)
+    print("Encoder Retrieval Success!")
 
 if __name__ == "__main__":
     main(config)
