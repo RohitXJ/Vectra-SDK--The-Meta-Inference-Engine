@@ -48,8 +48,11 @@ def get_data(support_path, query_path):
     if format != format_chk(query_path):
         raise ValueError(f"Mixed image formats detected. Please upload consistent image types for both query and support sets(e.g., all RGB or all grayscale).")
     
-    support_data = load_images(support_path, format)
-    query_data = load_images(query_path, format)
+    support_dataset = load_images(support_path, format)
+    query_dataset = load_images(query_path, format)
+
+    support_data = DataLoader(support_dataset, batch_size=len(support_dataset), shuffle=False)
+    query_data = DataLoader(query_dataset, batch_size=len(query_dataset), shuffle=False)
 
     return support_data, query_data, format
 
