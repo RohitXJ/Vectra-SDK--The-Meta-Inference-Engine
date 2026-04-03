@@ -2,6 +2,7 @@ import os
 import shutil
 import tempfile
 import re
+import time
 
 # Roots for temporary data storage
 BASE_TEMP_DIR = os.path.join(tempfile.gettempdir(), "vectra_sdk")
@@ -37,16 +38,7 @@ def get_session_paths(token):
     }
 
 def save_upload_image(token, category, class_name, file_name, content):
-    """
-    Saves an uploaded image into the token-specific class folder.
-    
-    Args:
-        token: User session token.
-        category: "support" or "query".
-        class_name: Name of the class the image belongs to.
-        file_name: Original file name.
-        content: Binary image content.
-    """
+    """Saves an uploaded image into the token-specific class folder."""
     paths = get_session_paths(token)
     target_dir = os.path.join(paths[category], sanitize_name(class_name))
     os.makedirs(target_dir, exist_ok=True)
@@ -66,9 +58,25 @@ def clear_session_data(token):
         return True
     return False
 
-def reset_category_data(token, category):
-    """Clears either support or query data for a token."""
-    paths = get_session_paths(token)
-    if os.path.exists(paths[category]):
-        shutil.rmtree(paths[category])
-        os.makedirs(paths[category], exist_ok=True)
+def cleanup_old_sessions(max_age_seconds=3600):
+    """
+    Scans BASE_TEMP_DIR and deletes session folders older than max_age_seconds.
+    Default is 1 hour (3600s).
+    """
+    now = time.time()
+    if not os.path.exists(BASE_TEMP_DIR):
+        return
+
+    for token_folder in os.listdir(BASE_TEMP_DIR):
+        folder_path = os.path.join(BASE_TEMP_DIR, token_folder)
+        if not os.path.isdir(folder_path):
+            continue
+            
+        # Check folder last modified time
+        mtime = os.path.getmtime(folder_path)
+        if (now - mtime) > max_age_seconds:
+            try:
+                shutil.rmtree(folder_path)
+                print(f"Cleanup: Deleted expired session {token_folder}")
+            except Exception as e:
+                print(f"Cleanup Error: {e}")

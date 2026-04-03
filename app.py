@@ -1,10 +1,11 @@
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, BackgroundTasks
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from typing import List
 import os
-import shutil
 import uuid
+import threading
+import time
 
 from utils import storage
 from main_service import run_fewshot_pipeline
@@ -19,6 +20,22 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# --- BACKGROUND CLEANUP TASK ---
+def background_cleanup():
+    """Background loop to clean up old sessions every 10 minutes."""
+    while True:
+        try:
+            # Clean folders older than 1 hour (3600 seconds)
+            storage.cleanup_old_sessions(max_age_seconds=3600)
+        except Exception as e:
+            print(f"Background Cleanup Error: {e}")
+        # Wait 10 minutes before next run
+        time.sleep(600)
+
+# Start cleanup thread
+cleanup_thread = threading.Thread(target=background_cleanup, daemon=True)
+cleanup_thread.start()
 
 # --- ENDPOINTS ---
 
@@ -40,10 +57,7 @@ async def upload_images(
     class_name: str = Form(...),
     files: List[UploadFile] = File(...)
 ):
-    """
-    Uploads multiple images for a specific class and category.
-    Category must be 'support' or 'query'.
-    """
+    """Uploads multiple images for a specific class and category."""
     if category not in ["support", "query"]:
         raise HTTPException(status_code=400, detail="Category must be 'support' or 'query'")
     
@@ -63,13 +77,9 @@ def train_model(
     token: str = Form(...),
     backbone_name: str = Form("resnet18")
 ):
-    """
-    Triggers the few-shot pipeline for the given session token.
-    """
+    """Triggers the few-shot pipeline for the given session token."""
     try:
         results = run_fewshot_pipeline(token, backbone_name)
-        # We don't want to return the full local path to the frontend for security
-        # but we return the filename for the download endpoint
         export_filename = os.path.basename(results["export_path"])
         
         return {
@@ -85,9 +95,7 @@ def train_model(
 
 @app.get("/download/{token}")
 def download_model(token: str):
-    """
-    Downloads the trained model for the given session.
-    """
+    """Downloads the trained model for the given session."""
     paths = storage.get_session_paths(token)
     export_filename = f"fewshot_model_{token}.pt"
     file_path = os.path.join(paths["export"], export_filename)
@@ -103,14 +111,9 @@ def download_model(token: str):
 
 @app.delete("/session/{token}")
 def delete_session(token: str):
-    """
-    Manually clears session data.
-    """
+    """Manually clears session data."""
     success = storage.clear_session_data(token)
     if success:
         return {"message": f"Session {token} data cleared."}
     else:
         return {"message": f"Session {token} not found or already cleared."}
-
-# --- BACKGROUND TASKS / CLEANUP ---
-# Future: Implement a task that runs every hour to delete folders older than X hours.
