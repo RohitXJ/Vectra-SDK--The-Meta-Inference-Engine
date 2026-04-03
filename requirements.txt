@@ -2,7 +2,6 @@ torch
 numpy
 pandas
 torchvision
-fastapi
-uvicorn
+fastapi[standard]
 python-multipart
 Pillow
