@@ -22,6 +22,8 @@ app.add_middleware(
 )
 
 # --- BACKGROUND CLEANUP TASK ---
+SESSION_RETRAIN_COUNTS = {}
+
 def background_cleanup():
     """Background loop to clean up old sessions every 10 minutes."""
     while True:
@@ -48,6 +50,7 @@ def create_session():
     """Generates a new session token for a user."""
     token = str(uuid.uuid4())
     storage.get_session_paths(token)
+    SESSION_RETRAIN_COUNTS[token] = 0
     return {"token": token}
 
 @app.post("/upload")
@@ -78,6 +81,11 @@ def train_model(
     backbone_name: str = Form("resnet18")
 ):
     """Triggers the few-shot pipeline for the given session token."""
+    count = SESSION_RETRAIN_COUNTS.get(token, 0)
+    if count >= 4:
+        raise HTTPException(status_code=403, detail="Maximum retries exceeded (3 allowed). Please start a new session.")
+    SESSION_RETRAIN_COUNTS[token] = count + 1
+
     try:
         results = run_fewshot_pipeline(token, backbone_name)
         export_filename = os.path.basename(results["export_path"])
@@ -112,6 +120,7 @@ def download_model(token: str):
 @app.delete("/session/{token}")
 def delete_session(token: str):
     """Manually clears session data."""
+    SESSION_RETRAIN_COUNTS.pop(token, None)
     success = storage.clear_session_data(token)
     if success:
         return {"message": f"Session {token} data cleared."}
