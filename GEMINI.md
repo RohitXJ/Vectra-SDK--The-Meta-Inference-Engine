@@ -1,21 +1,21 @@
 # Vectra-SDK--The Meta-Inference-Engine Development Roadmap
 
-- [ ] **Task 1: Codebase Comparison & Synchronization**
-    - [ ] Compare `core/` and `data/` with `main_app_core/few-shot-web/utils/`.
-    - [ ] Sync `app.py` logic with `main_app_core/few-shot-web/main.py`.
-    - [ ] Ensure all necessary utilities (like `export.py`) are integrated into the root.
-- [ ] **Task 2: Storage Logic Refactoring**
-    - [ ] Implement token-based folder creation in `/tmp` (or system temp dir).
-    - [ ] Update `IO.py` to handle dynamic paths based on tokens.
-    - [ ] Implement simple cleanup logic for expired session folders.
-- [ ] **Task 3: FastAPI Backend Implementation**
-    - [ ] Set up FastAPI project structure.
-    - [ ] Create schemas for requests/responses.
-    - [ ] Implement `POST /upload` endpoint (handling multipart images and tokens).
-    - [ ] Implement `POST /train` endpoint (triggering the few-shot pipeline).
-    - [ ] Implement `GET /download/{token}` endpoint for the exported model.
-- [ ] **Task 4: Frontend-Ready Connectivity**
-    - [ ] Configure CORS for frontend access.
-    - [ ] Ensure consistent JSON response formats.
-- [ ] **Task 5: Final Validation**
-    - [ ] Provide test scripts/commands to verify the backend without manual server runs.
+- [x] **Task 1: Codebase Comparison & Synchronization**
+    - [x] Compare `core/` and `data/` with `main_app_core/few-shot-web/utils/`.
+    - [x] Sync `app.py` logic with `main_app_core/few-shot-web/main.py` into `main_service.py`.
+    - [x] Ensure all necessary utilities (like `export.py`) are integrated into the root.
+- [x] **Task 2: Storage Logic Refactoring**
+    - [x] Implement token-based folder creation in `/tmp` (via `utils/storage.py`).
+    - [x] Update `IO.py` to handle dynamic paths based on tokens.
+    - [x] Implement simple cleanup logic for expired session folders.
+- [x] **Task 3: FastAPI Backend Implementation**
+    - [x] Set up FastAPI project structure in `app.py`.
+    - [x] Create schemas for requests/responses.
+    - [x] Implement `POST /upload` endpoint (handling multipart images and tokens).
+    - [x] Implement `POST /train` endpoint (triggering the few-shot pipeline).
+    - [x] Implement `GET /download/{token}` endpoint for the exported model.
+- [x] **Task 4: Frontend-Ready Connectivity**
+    - [x] Configure CORS for frontend access.
+    - [x] Ensure consistent JSON response formats.
+- [x] **Task 5: Final Validation**
+    - [x] Provide test scripts/commands to verify the backend without manual server runs (`testing/backend_validation.py`).

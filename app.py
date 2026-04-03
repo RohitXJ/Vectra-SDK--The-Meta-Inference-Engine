@@ -1,35 +1,116 @@
-from torch.utils.data import DataLoader
-import torch
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from typing import List
 import os
-import json
-from data.IO import get_data
-from core.backbone import get_encoder
-from core.embedding import get_embeds, get_prototype
+import shutil
+import uuid
 
+from utils import storage
+from main_service import run_fewshot_pipeline
 
-config = {
-    "n_way" : 2,
-    "k_shot" : 2,
-    "support" : "temp_data/support/",
-    "query" : "temp_data/query/",
-    "backbone" : "resnet18",
+app = FastAPI(title="Vectra-SDK--The Meta-Inference-Engine API")
+
+# --- CORS CONFIG ---
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Adjust this for production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# --- ENDPOINTS ---
+
+@app.get("/")
+def read_root():
+    return {"message": "Welcome to Vectra-SDK--The Meta-Inference-Engine API"}
+
+@app.post("/session/new")
+def create_session():
+    """Generates a new session token for a user."""
+    token = str(uuid.uuid4())
+    storage.get_session_paths(token)
+    return {"token": token}
+
+@app.post("/upload")
+async def upload_images(
+    token: str = Form(...),
+    category: str = Form(...),  # "support" or "query"
+    class_name: str = Form(...),
+    files: List[UploadFile] = File(...)
+):
+    """
+    Uploads multiple images for a specific class and category.
+    Category must be 'support' or 'query'.
+    """
+    if category not in ["support", "query"]:
+        raise HTTPException(status_code=400, detail="Category must be 'support' or 'query'")
+    
+    saved_paths = []
+    for file in files:
+        content = await file.read()
+        path = storage.save_upload_image(token, category, class_name, file.filename, content)
+        saved_paths.append(path)
+    
+    return {
+        "message": f"Successfully uploaded {len(files)} images to {category}/{class_name}",
+        "token": token
     }
 
-def main(config):
-    support_data, query_data, format = get_data(config["support"], config["query"])
-    print("Data Retrieval Success!")
-    encoder = get_encoder(config["backbone"], format)
-    #print(encoder)
-    print("Encoder Retrieval Success!")
-    support_embeds, support_labels, query_embeds, query_labels = get_embeds(support_data, query_data, encoder)
-    print(support_embeds[1], support_labels[1])
-    #print(query_embeds, query_labels)
-    print("Receiving Embeds")
+@app.post("/train")
+def train_model(
+    token: str = Form(...),
+    backbone_name: str = Form("resnet18")
+):
+    """
+    Triggers the few-shot pipeline for the given session token.
+    """
+    try:
+        results = run_fewshot_pipeline(token, backbone_name)
+        # We don't want to return the full local path to the frontend for security
+        # but we return the filename for the download endpoint
+        export_filename = os.path.basename(results["export_path"])
+        
+        return {
+            "status": "success",
+            "accuracy": f"{results['accuracy']:.2f}%",
+            "labels": results["labels"],
+            "model_filename": export_filename,
+            "predicted_labels": results["predicted_labels"],
+            "true_labels": results["true_labels"]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-    mean_embeds = get_prototype(support_embeds, support_labels)
-    print(mean_embeds)
+@app.get("/download/{token}")
+def download_model(token: str):
+    """
+    Downloads the trained model for the given session.
+    """
+    paths = storage.get_session_paths(token)
+    export_filename = f"fewshot_model_{token}.pt"
+    file_path = os.path.join(paths["export"], export_filename)
+    
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Model not found. Please train first.")
+    
+    return FileResponse(
+        path=file_path,
+        filename=export_filename,
+        media_type='application/octet-stream'
+    )
 
+@app.delete("/session/{token}")
+def delete_session(token: str):
+    """
+    Manually clears session data.
+    """
+    success = storage.clear_session_data(token)
+    if success:
+        return {"message": f"Session {token} data cleared."}
+    else:
+        return {"message": f"Session {token} not found or already cleared."}
 
-
-if __name__ == "__main__":
-    main(config)
+# --- BACKGROUND TASKS / CLEANUP ---
+# Future: Implement a task that runs every hour to delete folders older than X hours.
