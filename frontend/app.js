@@ -30,6 +30,7 @@ const dom = {
     statusSubtext: document.getElementById('statusSubtext'),
     progressBar: document.getElementById('progressBar'),
     modelOptions: document.querySelectorAll('input[name="backbone"]'),
+    useUnknown: document.getElementById('useUnknown'),
     
     // View 4
     resAccuracy: document.getElementById('resAccuracy'),
@@ -39,7 +40,14 @@ const dom = {
     downloadBtn: document.getElementById('downloadBtn'),
     resetBtn: document.getElementById('resetBtn'),
     retrainBtn: document.getElementById('retrainBtn'),
-    retriesLeftText: document.getElementById('retriesLeftText')
+    retriesLeftText: document.getElementById('retriesLeftText'),
+
+    // Live Eval
+    evalDropZone: document.getElementById('evalDropZone'),
+    evalInput: document.getElementById('evalInput'),
+    evalPreview: document.getElementById('evalPreview'),
+    evalResult: document.getElementById('evalResult'),
+    evalLabel: document.getElementById('evalLabel')
 };
 
 // INITIALIZATION
@@ -109,6 +117,11 @@ function setupEventListeners() {
                 dom.resetBtn.click();
             }
         }
+    });
+
+    // Live Eval
+    dom.evalInput.addEventListener('change', e => {
+        if(e.target.files && e.target.files[0]) runLiveEval(e.target.files[0]);
     });
 
     // Reset Flow
@@ -302,9 +315,12 @@ async function runTrainingPipeline() {
         // 2. Train
         updateUploadStatus("Compiling Graph & Training...", 75);
         const backbone = document.querySelector('input[name="backbone"]:checked').value;
+        const useUnknown = dom.useUnknown.checked;
+
         const fd = new FormData();
         fd.append("token", state.sessionToken);
         fd.append("backbone_name", backbone);
+        fd.append("use_unknown", useUnknown);
 
         const res = await fetch(`${API_BASE}/train`, { method: 'POST', body: fd });
         if(!res.ok) throw new Error("Training API failure");
@@ -343,6 +359,42 @@ function updateUploadStatus(txt, prog) {
     dom.progressBar.style.width = `${prog}%`;
 }
 
+// LIVE EVALUATION
+async function runLiveEval(file) {
+    // UI Update
+    dom.evalResult.classList.remove('hidden');
+    dom.evalLabel.textContent = "Processing...";
+    dom.evalLabel.className = "text-xl font-display font-bold text-slate-400";
+    
+    // Preview
+    const reader = new FileReader();
+    reader.onload = e => {
+        dom.evalPreview.classList.remove('hidden');
+        dom.evalPreview.querySelector('img').src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+
+    try {
+        const fd = new FormData();
+        fd.append("token", state.sessionToken);
+        fd.append("file", file);
+
+        const res = await fetch(`${API_BASE}/eval`, { method: 'POST', body: fd });
+        if(!res.ok) throw new Error("Eval failed");
+        const data = await res.json();
+
+        dom.evalLabel.textContent = data.prediction;
+        if(data.prediction === "Unknown") {
+            dom.evalLabel.className = "text-xl font-display font-bold text-rose-400";
+        } else {
+            dom.evalLabel.className = "text-xl font-display font-bold text-accent-400";
+        }
+    } catch(err) {
+        dom.evalLabel.textContent = "Error";
+        showToast("Live evaluation failed.", "error");
+    }
+}
+
 // RESULTS DOM
 function renderResults(data, backbone) {
     dom.resAccuracy.textContent = data.accuracy;
@@ -354,11 +406,22 @@ function renderResults(data, backbone) {
     const preds = data.predicted_labels;
     const lMap = data.labels;
 
+    // Reset Live Eval UI
+    dom.evalResult.classList.add('hidden');
+    dom.evalPreview.classList.add('hidden');
+    dom.evalInput.value = "";
+
     for (let i = 0; i < actuals.length; i++) {
         const tr = document.createElement('tr');
         const isC = actuals[i] === preds[i];
         const aName = lMap[actuals[i]] || actuals[i];
-        const pName = lMap[preds[i]] || preds[i];
+        
+        let pName;
+        if (preds[i] >= lMap.length) {
+            pName = "Unknown";
+        } else {
+            pName = lMap[preds[i]] || preds[i];
+        }
 
         tr.innerHTML = `
             <td class="py-3 px-2 text-white/70">${i + 1}</td>

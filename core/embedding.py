@@ -41,7 +41,7 @@ def compute_prototypes(embeddings, labels):
 
     return torch.stack(prototypes)
 
-def compute_distances_and_predict(query_embeddings, query_labels, prototypes):
+def compute_distances_and_predict(query_embeddings, query_labels, prototypes, use_unknown=False, unknown_threshold=None):
     """
     Predicts labels for queries based on distances to prototypes.
     
@@ -49,14 +49,22 @@ def compute_distances_and_predict(query_embeddings, query_labels, prototypes):
         query_embeddings: Tensor of shape [Q, D]
         query_labels: Tensor of shape [Q]
         prototypes: Tensor of shape [n_way, D]
+        use_unknown: Boolean, whether to use a threshold for out-of-distribution rejection.
+        unknown_threshold: Float, distances above this value map to index 'n_way'.
 
     Returns:
-        preds: Tensor of shape [Q] — predicted class indices (0 to n_way-1)
+        preds: Tensor of shape [Q] — predicted class indices (0 to n_way)
         labels: Tensor of shape [Q] — actual class indices (0 to n_way-1)
     """
     # Compute pairwise distances [Q, n_way]
     dists = torch.cdist(query_embeddings, prototypes)
 
     # Predicted class is index of nearest prototype
-    preds = torch.argmin(dists, dim=1)  # [Q]
+    min_dists, preds = torch.min(dists, dim=1)  # [Q]
+
+    if use_unknown and unknown_threshold is not None:
+        # If min distance exceeds threshold, map to the index after the last valid class
+        unknown_mask = min_dists > unknown_threshold
+        preds[unknown_mask] = prototypes.size(0)
+
     return preds, query_labels

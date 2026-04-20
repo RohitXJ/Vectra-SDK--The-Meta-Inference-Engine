@@ -256,3 +256,11 @@
 }
 .toast.show { transform: translateX(0); }
 .toast.error { border-left-color: #f43f5e; /* Rose 500 */ }
+
+/* Toggle Switch Styles */
+#useUnknown:checked + div {
+  background-color: var(--color-accent-blue);
+}
+#useUnknown:checked + div + .dot {
+  transform: translateX(100%);
+}

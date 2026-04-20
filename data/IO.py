@@ -4,7 +4,7 @@ from PIL import Image
 import os
 
 def img_check(path_to_check):
-    """Detects image format (RGB or L) and ensures consistency across a directory."""
+    """Detects the primary image format and ensures consistency."""
     detected = set()
     if not os.path.exists(path_to_check):
         raise ValueError(f"Path does not exist: {path_to_check}")
@@ -23,8 +23,10 @@ def img_check(path_to_check):
                 
     if not detected:
         raise ValueError(f"No images found in {path_to_check}")
-    if len(detected) > 1:
-        raise ValueError(f"Mixed image formats detected: {detected}. Please upload consistent image types (e.g., all RGB or all grayscale).")
+    
+    # If we have mixed formats, we prefer RGB as it's the most compatible with pre-trained backbones
+    if 'RGB' in detected or 'RGBA' in detected or len(detected) > 1:
+        return 'RGB'
     
     return detected.pop()
 
@@ -50,7 +52,14 @@ def get_data(img_path, ret_transform=False):
     """Loads images from a folder as a Dataset/DataLoader."""
     image_format = img_check(img_path)
     transform = get_transform(image_format)
-    data = datasets.ImageFolder(root=img_path, transform=transform)
+    
+    # Custom loader to ensure all images are converted to the target format (RGB or L)
+    def fixed_loader(path):
+        with open(path, 'rb') as f:
+            img = Image.open(f)
+            return img.convert(image_format)
+
+    data = datasets.ImageFolder(root=img_path, transform=transform, loader=fixed_loader)
     
     if ret_transform:
         return data, image_format, transform

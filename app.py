@@ -6,9 +6,14 @@ import os
 import uuid
 import threading
 import time
+import io
+import torch
+from PIL import Image
 
 from utils import storage
 from main_service import run_fewshot_pipeline
+from data import IO
+from core import backbone, embedding
 
 app = FastAPI(title="Vectra-SDK--The Meta-Inference-Engine API")
 
@@ -75,19 +80,27 @@ async def upload_images(
         "token": token
     }
 
+import traceback
+
+# ... existing code ...
+
 @app.post("/train")
 def train_model(
     token: str = Form(...),
-    backbone_name: str = Form("resnet18")
+    backbone_name: str = Form("resnet18"),
+    use_unknown: str = Form("false")
 ):
     """Triggers the few-shot pipeline for the given session token."""
-    count = SESSION_RETRAIN_COUNTS.get(token, 0)
-    if count >= 4:
-        raise HTTPException(status_code=403, detail="Maximum retries exceeded (3 allowed). Please start a new session.")
-    SESSION_RETRAIN_COUNTS[token] = count + 1
-
     try:
-        results = run_fewshot_pipeline(token, backbone_name)
+        count = SESSION_RETRAIN_COUNTS.get(token, 0)
+        if count >= 4:
+            raise HTTPException(status_code=403, detail="Maximum retries exceeded (3 allowed). Please start a new session.")
+        SESSION_RETRAIN_COUNTS[token] = count + 1
+
+        # Convert string form to bool
+        use_unknown_bool = use_unknown.lower() == "true"
+
+        results = run_fewshot_pipeline(token, backbone_name, use_unknown=use_unknown_bool)
         export_filename = os.path.basename(results["export_path"])
         
         return {
@@ -99,7 +112,78 @@ def train_model(
             "true_labels": results["true_labels"]
         }
     except Exception as e:
+        print(f"ERROR in /train: {str(e)}")
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/eval")
+async def evaluate_image(
+    token: str = Form(...),
+    file: UploadFile = File(...)
+):
+    """Evaluates a single image using the trained session model."""
+    try:
+        paths = storage.get_session_paths(token)
+        export_filename = f"fewshot_model_{token}.pt"
+        model_path = os.path.join(paths["export"], export_filename)
+
+        if not os.path.exists(model_path):
+            raise HTTPException(status_code=404, detail="Model not found. Please train first.")
+
+        # 1. Load exported session config
+        config = torch.load(model_path, map_location="cpu")
+        prototypes = config["prototypes"]
+        labels = config["labels"]
+        backbone_name = config["backbone"]
+        image_format = config["image_format"]
+        use_unknown = config.get("use_unknown", False)
+        unknown_threshold = config.get("unknown_threshold", None)
+
+        # 2. Initialize encoder
+        encoder = backbone.get_encoder(backbone_name, image_format)
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        encoder = encoder.to(device)
+        encoder.eval()
+
+        # 3. Preprocess image
+        content = await file.read()
+        image = Image.open(io.BytesIO(content))
+        if image.mode != image_format:
+            # Handle grayscale conversion if needed
+            if image_format == 'L':
+                image = image.convert('L')
+            else:
+                image = image.convert('RGB')
+        
+        transform = IO.get_transform(image_format)
+        input_tensor = transform(image).unsqueeze(0).to(device) # Add batch dim
+
+        # 4. Get embedding and predict
+        with torch.no_grad():
+            query_embedding = encoder(input_tensor)
+            if len(query_embedding.shape) > 2:
+                query_embedding = query_embedding.view(query_embedding.size(0), -1)
+            
+            # Dummy label for prediction function
+            dummy_label = torch.zeros(1)
+            
+            preds, _ = embedding.compute_distances_and_predict(
+                query_embedding.cpu(), dummy_label, prototypes,
+                use_unknown=use_unknown, unknown_threshold=unknown_threshold
+            )
+
+        pred_idx = preds[0].item()
+        if pred_idx < len(labels):
+            result_label = labels[pred_idx]
+        else:
+            result_label = "Unknown"
+
+        return {"prediction": result_label}
+
+    except Exception as e:
+        print(f"ERROR in /eval: {str(e)}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Evaluation failed: {str(e)}")
 
 @app.get("/download/{token}")
 def download_model(token: str):

@@ -5,13 +5,14 @@ from data import IO
 from core import backbone, embedding, export
 from utils import storage
 
-def run_fewshot_pipeline(token, backbone_name):
+def run_fewshot_pipeline(token, backbone_name, use_unknown=False):
     """
     Runs the few-shot learning pipeline for a specific user session.
     
     Args:
         token: User session token.
         backbone_name: The CNN architecture to use.
+        use_unknown: Whether to enable out-of-distribution rejection.
     """
     paths = storage.get_session_paths(token)
     
@@ -35,11 +36,36 @@ def run_fewshot_pipeline(token, backbone_name):
     support_embeddings, support_labels = embedding.get_embeddings(support_loader, encoder)
     query_embeddings, query_labels = embedding.get_embeddings(query_loader, encoder)
     
-    # 5. Compute prototypes and predict
+    # 5. Compute prototypes and threshold
     prototypes = embedding.compute_prototypes(support_embeddings, support_labels)
-    preds_labels, true_labels = embedding.compute_distances_and_predict(query_embeddings, query_labels, prototypes)
+    
+    unknown_threshold = None
+    if use_unknown:
+        # Calculate intra-class distances robustly
+        unique_classes = torch.unique(support_labels)
+        intra_distances = []
+        for i, cls in enumerate(unique_classes):
+            class_embeddings = support_embeddings[support_labels == cls]
+            class_prototype = prototypes[i]
+            # Distances of each sample in this class to its prototype
+            dist = torch.norm(class_embeddings - class_prototype, dim=1)
+            intra_distances.append(dist)
+        
+        if intra_distances:
+            all_intra_distances = torch.cat(intra_distances)
+            # Heuristic: 1.5 * max intra-class distance
+            unknown_threshold = 1.5 * torch.max(all_intra_distances).item()
+        else:
+            unknown_threshold = 0.0
+
+    preds_labels, true_labels = embedding.compute_distances_and_predict(
+        query_embeddings, query_labels, prototypes, 
+        use_unknown=use_unknown, unknown_threshold=unknown_threshold
+    )
 
     # 6. Calculate accuracy
+    # If using unknown, we need to handle the case where true_labels doesn't contain the unknown index
+    # but preds_labels might.
     correct = (preds_labels == true_labels).sum().item()
     total = true_labels.size(0)
     accuracy = correct / total * 100
@@ -53,6 +79,8 @@ def run_fewshot_pipeline(token, backbone_name):
         "image_format": img_format,
         "transforms": str(transforms_obj),  # Store for reference
         "prototypes": prototypes.cpu(),
+        "use_unknown": use_unknown,
+        "unknown_threshold": unknown_threshold
     }
     
     export_filename = f"fewshot_model_{token}.pt"

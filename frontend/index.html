@@ -51,7 +51,7 @@
         <header class="flex flex-col md:flex-row items-center justify-between mb-8 pb-4 border-b border-slate-700/50 accent-bottom-glow">
             <div class="flex items-center gap-4">
                 <div class="w-12 h-12 rounded-xl accent-glass flex items-center justify-center shadow-accent">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></svg>
                 </div>
                 <div>
                     <h1 class="text-3xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-accent-400 drop-shadow-sm">Vectra Engine</h1>
@@ -120,6 +120,20 @@
                             <li><strong class="text-white font-medium">EfficientNet (B0, B1):</strong> State-of-the-art scaling technique that balances depth and width for maximum parameter efficiency.</li>
                             <li><strong class="text-white font-medium">DenseNet (121, 169):</strong> Re-uses features across layers to combat vanishing gradients; excellent for complex visual patterns.</li>
                         </ul>
+                    </div>
+
+                    <!-- Unknown Category Toggle -->
+                    <div class="mb-6 flex items-center justify-center">
+                        <label class="flex items-center cursor-pointer group">
+                            <div class="relative">
+                                <input type="checkbox" id="useUnknown" class="sr-only">
+                                <div class="w-10 h-6 bg-slate-700 rounded-full shadow-inner group-hover:bg-slate-600 transition-colors"></div>
+                                <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform duration-300"></div>
+                            </div>
+                            <div class="ml-3 text-slate-300 font-medium group-hover:text-white transition-colors">
+                                Enable Unknown Category Rejection <span class="text-[10px] text-accent-400 font-bold ml-1 uppercase">(Experimental)</span>
+                            </div>
+                        </label>
                     </div>
                     
                     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-10 overflow-y-auto custom-scrollbar p-1 max-h-[40vh]">
@@ -211,7 +225,7 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-grow">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-grow overflow-y-auto custom-scrollbar pr-2">
                     <!-- Metrics side -->
                     <div class="lg:col-span-1 flex flex-col gap-6">
                         <div class="glass-dark p-8 rounded-3xl flex flex-col items-center justify-center relative overflow-hidden shadow-accent border border-accent-500/20">
@@ -230,12 +244,31 @@
                                 <p id="resClassesCount" class="text-lg font-bold text-white">0</p>
                             </div>
                         </div>
+
+                        <!-- Live Evaluation Hub -->
+                        <div class="glass-dark p-6 rounded-3xl border border-accent-500/20 shadow-accent flex flex-col gap-4">
+                            <h3 class="font-display font-bold text-sm tracking-widest uppercase text-accent-400">Live Evaluation Hub</h3>
+                            <div id="evalDropZone" class="relative rounded-2xl border-2 border-dashed border-slate-700 bg-slate-900/40 flex flex-col items-center justify-center p-6 cursor-pointer hover:border-accent-500/60 transition-all group">
+                                <input type="file" id="evalInput" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                                <div id="evalPreview" class="hidden absolute inset-0 rounded-2xl overflow-hidden">
+                                    <img src="" class="w-full h-full object-cover opacity-40">
+                                </div>
+                                <div class="text-center z-10">
+                                    <svg class="w-8 h-8 text-slate-500 mb-2 mx-auto group-hover:text-accent-400 transition-colors" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                                    <p class="text-xs font-medium text-slate-300">Drop image to test</p>
+                                </div>
+                            </div>
+                            <div id="evalResult" class="hidden glass-dark rounded-xl p-4 border border-slate-700/50 animate-fade-up">
+                                <p class="text-[10px] uppercase tracking-widest text-slate-500 mb-1">Inferred Label</p>
+                                <p id="evalLabel" class="text-xl font-display font-bold text-white">Loading...</p>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Table side -->
-                    <div class="lg:col-span-2 glass-dark rounded-3xl p-6 flex flex-col border border-slate-700/50">
+                    <div class="lg:col-span-2 glass-dark rounded-3xl p-6 flex flex-col border border-slate-700/50 h-fit">
                         <h3 class="font-display font-semibold text-base text-slate-300 border-b border-slate-700/50 pb-3 mb-3">Prediction Matrix</h3>
-                        <div class="overflow-y-auto flex-grow custom-scrollbar pr-2 h-64">
+                        <div class="overflow-y-auto flex-grow custom-scrollbar pr-2 max-h-[500px]">
                             <table class="w-full text-left">
                                 <thead>
                                     <tr class="text-[11px] uppercase tracking-wider text-slate-500">
