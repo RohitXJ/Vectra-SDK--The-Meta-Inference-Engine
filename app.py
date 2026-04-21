@@ -8,10 +8,12 @@ import threading
 import time
 import io
 import torch
+import traceback
 from PIL import Image
 
 from utils import storage
 from main_service import run_fewshot_pipeline
+from fastapi.staticfiles import StaticFiles
 from data import IO
 from core import backbone, embedding
 
@@ -46,10 +48,6 @@ cleanup_thread.start()
 
 # --- ENDPOINTS ---
 
-@app.get("/")
-def read_root():
-    return {"message": "Welcome to Vectra-SDK--The Meta-Inference-Engine API"}
-
 @app.post("/session/new")
 def create_session():
     """Generates a new session token for a user."""
@@ -79,10 +77,6 @@ async def upload_images(
         "message": f"Successfully uploaded {len(files)} images to {category}/{class_name}",
         "token": token
     }
-
-import traceback
-
-# ... existing code ...
 
 @app.post("/train")
 def train_model(
@@ -149,34 +143,27 @@ async def evaluate_image(
         content = await file.read()
         image = Image.open(io.BytesIO(content))
         if image.mode != image_format:
-            # Handle grayscale conversion if needed
             if image_format == 'L':
                 image = image.convert('L')
             else:
                 image = image.convert('RGB')
         
         transform = IO.get_transform(image_format)
-        input_tensor = transform(image).unsqueeze(0).to(device) # Add batch dim
+        input_tensor = transform(image).unsqueeze(0).to(device)
 
-        # 4. Get embedding and predict
         with torch.no_grad():
             query_embedding = encoder(input_tensor)
             if len(query_embedding.shape) > 2:
                 query_embedding = query_embedding.view(query_embedding.size(0), -1)
             
-            # Dummy label for prediction function
             dummy_label = torch.zeros(1)
-            
             preds, _ = embedding.compute_distances_and_predict(
                 query_embedding.cpu(), dummy_label, prototypes,
                 use_unknown=use_unknown, unknown_threshold=unknown_threshold
             )
 
         pred_idx = preds[0].item()
-        if pred_idx < len(labels):
-            result_label = labels[pred_idx]
-        else:
-            result_label = "Unknown"
+        result_label = labels[pred_idx] if pred_idx < len(labels) else "Unknown"
 
         return {"prediction": result_label}
 
@@ -210,3 +197,6 @@ def delete_session(token: str):
         return {"message": f"Session {token} data cleared."}
     else:
         return {"message": f"Session {token} not found or already cleared."}
+
+# Serve Frontend - Must be last
+app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")

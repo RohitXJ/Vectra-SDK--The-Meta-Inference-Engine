@@ -1,0 +1,21 @@
+# .dockerignore
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.git/
+.gitignore
+.venv/
+vectra_sdk/dist/
+vectra_sdk/build/
+vectra_sdk/*.egg-info/
+testing/
+library_copy/
+Docs/
+DOC.md
+GEMINI.md
+README.md
+LICENSE
+setup.py
+pyproject.toml
+.gitattributes
