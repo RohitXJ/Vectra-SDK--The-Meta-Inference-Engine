@@ -111,5 +111,4 @@ This project was developed as a **Final Year Academic Project**. It demonstrates
 ## 📜 License
 This project is licensed under a Custom Research and Educational Use License. Commercial use is prohibited without prior permission.
 
-**Author:** Rohit Gomes  
-**Contact:** gomesrohit92@gmail.com
+**Author:** Rohit Gomes, Ankur Halder, Riyanka Bag, Bidisha Pal
