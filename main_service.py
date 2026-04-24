@@ -55,13 +55,14 @@ def run_fewshot_pipeline(token, backbone_name, use_unknown=False):
         
         if intra_distances:
             all_intra_distances = torch.cat(intra_distances)
-            # Improved Heuristic: Max distance + margin, with a floor
-            # Since embeddings are normalized, max distance is 2.0.
-            # A good default for OOD is around 1.0 - 1.2
+            # Improved Heuristic:
+            # For normalized embeddings, intra-class distances are usually small (0.1 - 0.5).
+            # A threshold that is too high (like 0.8+) will fail to reject OOD samples.
+            # We use a tighter multiplier and a lower floor for better sensitivity.
             max_dist = torch.max(all_intra_distances).item()
-            unknown_threshold = max(0.8, 1.5 * max_dist) 
+            unknown_threshold = max(0.6, 1.2 * max_dist) 
         else:
-            unknown_threshold = 1.0 # Default fallback
+            unknown_threshold = 0.7 # Default fallback for empty intra_distances
 
     preds_labels, true_labels = embedding.compute_distances_and_predict(
         query_embeddings, query_labels, prototypes, 
