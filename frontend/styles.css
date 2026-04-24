@@ -7,8 +7,13 @@
 
 body {
   background-color: var(--color-bg-base);
-  background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
-  background-size: 24px 24px;
+  /* Light Sci-Fi Geometric/Tech background overlaid with heavy white to keep UI crisp */
+  background-image: 
+    linear-gradient(rgba(248, 250, 252, 0.65), rgba(248, 250, 252, 0.9)), 
+    url('https://images.unsplash.com/photo-1614729939124-032f0b56c9ce?auto=format&fit=crop&q=80');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
 }
 
 /* Premium White Cards */
