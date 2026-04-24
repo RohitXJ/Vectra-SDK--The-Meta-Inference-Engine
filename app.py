@@ -156,6 +156,9 @@ async def evaluate_image(
             if len(query_embedding.shape) > 2:
                 query_embedding = query_embedding.view(query_embedding.size(0), -1)
             
+            # Normalize embedding
+            query_embedding = torch.nn.functional.normalize(query_embedding, p=2, dim=1)
+            
             dummy_label = torch.zeros(1)
             preds, _ = embedding.compute_distances_and_predict(
                 query_embedding.cpu(), dummy_label, prototypes,

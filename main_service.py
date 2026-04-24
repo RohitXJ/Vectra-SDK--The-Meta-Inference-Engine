@@ -38,6 +38,8 @@ def run_fewshot_pipeline(token, backbone_name, use_unknown=False):
     
     # 5. Compute prototypes and threshold
     prototypes = embedding.compute_prototypes(support_embeddings, support_labels)
+    # Re-normalize prototypes to unit length
+    prototypes = torch.nn.functional.normalize(prototypes, p=2, dim=1)
     
     unknown_threshold = None
     if use_unknown:
@@ -53,10 +55,13 @@ def run_fewshot_pipeline(token, backbone_name, use_unknown=False):
         
         if intra_distances:
             all_intra_distances = torch.cat(intra_distances)
-            # Heuristic: 1.5 * max intra-class distance
-            unknown_threshold = 1.5 * torch.max(all_intra_distances).item()
+            # Improved Heuristic: Max distance + margin, with a floor
+            # Since embeddings are normalized, max distance is 2.0.
+            # A good default for OOD is around 1.0 - 1.2
+            max_dist = torch.max(all_intra_distances).item()
+            unknown_threshold = max(0.8, 1.5 * max_dist) 
         else:
-            unknown_threshold = 0.0
+            unknown_threshold = 1.0 # Default fallback
 
     preds_labels, true_labels = embedding.compute_distances_and_predict(
         query_embeddings, query_labels, prototypes, 

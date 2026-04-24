@@ -15,6 +15,10 @@ def get_embeddings(dataloader, encoder):
             # Ensure embeddings are flattened if not already
             if len(embeddings.shape) > 2:
                 embeddings = embeddings.view(embeddings.size(0), -1)
+            
+            # Normalize embeddings to unit hypersphere for stable distances
+            embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=1)
+            
             all_embeddings.append(embeddings.cpu())
             all_labels.append(labels)
             

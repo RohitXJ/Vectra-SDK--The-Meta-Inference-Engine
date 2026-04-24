@@ -74,6 +74,9 @@ class VectraInference:
             if len(embedding.shape) > 2:
                 embedding = embedding.view(embedding.size(0), -1)
             
+            # Normalize embedding to unit hypersphere
+            embedding = torch.nn.functional.normalize(embedding, p=2, dim=1)
+            
             # Compute distances to prototypes
             dists = torch.cdist(embedding, self.prototypes)
             min_dist, pred_idx = torch.min(dists, dim=1)

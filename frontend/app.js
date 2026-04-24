@@ -65,7 +65,13 @@ async function init() {
     }
 
     setupEventListeners();
-    updateClassCards(2); 
+    let initialMin = document.getElementById('useUnknown').checked ? 1 : 2;
+    dom.numClasses.value = initialMin;
+    updateClassCards(initialMin); 
+    
+    if (window.lucide) {
+        lucide.createIcons();
+    }
 }
 
 function createToastContainer() {
@@ -81,9 +87,23 @@ function setupEventListeners() {
         let v = parseInt(dom.numClasses.value);
         if(v < 10) { dom.numClasses.value = v + 1; updateClassCards(v + 1); }
     });
+    // Checkbox toggle logic
+    dom.useUnknown = document.getElementById('useUnknown');
+    if(dom.useUnknown) {
+        dom.useUnknown.addEventListener('change', (e) => {
+            let minC = e.target.checked ? 1 : 2;
+            dom.numClasses.min = minC;
+            if(state.classes.length < minC) {
+                dom.numClasses.value = minC;
+                updateClassCards(minC);
+            }
+        });
+    }
+
     dom.decClasses.addEventListener('click', () => {
         let v = parseInt(dom.numClasses.value);
-        if(v > 2) { dom.numClasses.value = v - 1; updateClassCards(v - 1); }
+        let minC = dom.useUnknown.checked ? 1 : 2;
+        if(v > minC) { dom.numClasses.value = v - 1; updateClassCards(v - 1); }
     });
 
     // Navigation
@@ -107,7 +127,8 @@ function setupEventListeners() {
             // Reset Training UI state
             dom.btnNext.disabled = false;
             dom.btnBack.disabled = false;
-            dom.btnNext.innerHTML = 'Initialize Fast-Train <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
+            dom.btnNext.innerHTML = 'Initialize Fast-Train <i data-lucide="zap" class="w-5 h-5"></i>';
+            if (window.lucide) lucide.createIcons();
             dom.trainingStatus.classList.add('hidden');
             document.querySelector('#view-3 .grid').classList.remove('opacity-30', 'pointer-events-none');
             
@@ -173,17 +194,19 @@ function updateNavUI() {
     
     if(state.currentView === 1) {
         dom.btnBack.classList.add('hidden');
-        dom.btnNext.innerHTML = 'Define Classes <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>';
+        dom.btnNext.innerHTML = 'Define Classes <i data-lucide="chevron-right" class="w-5 h-5"></i>';
     } else if(state.currentView === 2) {
         dom.btnBack.classList.remove('hidden');
-        dom.btnNext.innerHTML = 'Proceed to Model <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>';
+        dom.btnNext.innerHTML = 'Proceed to Model <i data-lucide="chevron-right" class="w-5 h-5"></i>';
     } else if(state.currentView === 3) {
         dom.btnBack.classList.remove('hidden');
-        dom.btnNext.innerHTML = 'Initialize Fast-Train <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
+        dom.btnNext.innerHTML = 'Initialize Fast-Train <i data-lucide="zap" class="w-5 h-5"></i>';
     } else {
         dom.btnBack.classList.add('hidden');
         dom.btnNext.classList.add('hidden'); // No next on results.
     }
+
+    if (window.lucide) lucide.createIcons();
 
     // Indicators
     dom.indicators.forEach((ind, i) => {
@@ -238,6 +261,7 @@ function updateClassCards(targetCount) {
     // Update indices
     setTimeout(() => {
         document.querySelectorAll('.class-index').forEach((el, i) => el.textContent = i + 1);
+        if (window.lucide) lucide.createIcons();
     }, 10);
 }
 
@@ -256,11 +280,13 @@ function renderClassCard(classObj, index) {
     
     // Remove Btn
     card.querySelector('.remove-class-btn').addEventListener('click', () => {
-        if(state.classes.length <= 2) { showToast("Min 2 classes.", "error"); return; }
+        let minC = document.getElementById('useUnknown').checked ? 1 : 2;
+        if(state.classes.length <= minC) { showToast(`Min ${minC} classes.`, "error"); return; }
         state.classes = state.classes.filter(c => c.id !== classObj.id);
         dom.numClasses.value = state.classes.length;
         card.remove();
         document.querySelectorAll('.class-index').forEach((el, i) => el.textContent = i + 1);
+        if (window.lucide) lucide.createIcons();
     });
 
     dom.classesGrid.appendChild(card);
@@ -282,7 +308,7 @@ function setupZone(el, obj, type, countEl) {
         else obj.queryFiles.push(...valid);
         
         countEl.textContent = `${type==='support'?obj.supportFiles.length:obj.queryFiles.length} items added`;
-        countEl.classList.add('text-accent-400', 'font-bold'); // highlight
+        countEl.classList.add('text-primary-600', 'font-bold'); // highlight
     }
 }
 
@@ -290,7 +316,7 @@ function setupZone(el, obj, type, countEl) {
 async function runTrainingPipeline() {
     dom.btnNext.disabled = true;
     dom.btnBack.disabled = true;
-    dom.btnNext.innerHTML = '<span class="loader-accent w-5 h-5 border-2"></span> Processing...';
+    dom.btnNext.innerHTML = '<span class="loader-accent w-5 h-5 border-2 inline-block"></span> Processing...';
     
     // UI prep
     dom.trainingStatus.classList.remove('hidden');
@@ -340,7 +366,8 @@ async function runTrainingPipeline() {
         dom.trainingStatus.classList.add('hidden');
         dom.btnNext.disabled = false;
         dom.btnBack.disabled = false;
-        dom.btnNext.innerHTML = 'Initialize Fast-Train <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
+        dom.btnNext.innerHTML = 'Initialize Fast-Train <i data-lucide="zap" class="w-5 h-5"></i>';
+        if (window.lucide) lucide.createIcons();
     }
 }
 
@@ -385,9 +412,9 @@ async function runLiveEval(file) {
 
         dom.evalLabel.textContent = data.prediction;
         if(data.prediction === "Unknown") {
-            dom.evalLabel.className = "text-xl font-display font-bold text-rose-400";
+            dom.evalLabel.className = "text-xl font-display font-bold text-red-600";
         } else {
-            dom.evalLabel.className = "text-xl font-display font-bold text-accent-400";
+            dom.evalLabel.className = "text-xl font-display font-bold text-primary-600";
         }
     } catch(err) {
         dom.evalLabel.textContent = "Error";
@@ -400,6 +427,14 @@ function renderResults(data, backbone) {
     dom.resAccuracy.textContent = data.accuracy;
     dom.resClassesCount.textContent = data.labels.length;
     dom.resBackbone.textContent = backbone.replace('_', ' ');
+
+    const accGauge = document.getElementById('accuracyGaugeCircle');
+    if(accGauge) {
+        const numAccuracy = parseFloat(data.accuracy);
+        setTimeout(() => {
+            accGauge.setAttribute('stroke-dasharray', `${numAccuracy}, 100`);
+        }, 300);
+    }
 
     dom.predictionsTableBody.innerHTML = '';
     const actuals = data.true_labels;
@@ -424,12 +459,12 @@ function renderResults(data, backbone) {
         }
 
         tr.innerHTML = `
-            <td class="py-3 px-2 text-white/70">${i + 1}</td>
+            <td class="py-3 px-2 text-slate-500">${i + 1}</td>
             <td class="py-3 px-2 font-medium">${aName}</td>
-            <td class="py-3 px-2 font-bold ${isC ? 'text-green-400' : 'text-pink-500'}">${pName}</td>
+            <td class="py-3 px-2 font-bold ${isC ? 'text-emerald-600' : 'text-red-600'}">${pName}</td>
             <td class="py-3 px-2 text-right">
-                ${isC ? `<span class="bg-green-500/20 text-green-300 px-2 py-1 rounded text-xs">PASS</span>` 
-                      : `<span class="bg-pink-500/20 text-pink-300 px-2 py-1 rounded text-xs">FAIL</span>`}
+                ${isC ? `<span class="bg-emerald-100 text-emerald-700 font-bold px-2 py-1 rounded text-xs">PASS</span>` 
+                      : `<span class="bg-red-100 text-red-700 font-bold px-2 py-1 rounded text-xs">FAIL</span>`}
             </td>
         `;
         dom.predictionsTableBody.appendChild(tr);
