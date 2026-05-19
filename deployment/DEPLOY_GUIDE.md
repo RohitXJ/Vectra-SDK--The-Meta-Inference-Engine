@@ -29,9 +29,10 @@ To keep your `HF_TOKEN` 100% hidden from the user's browser, you should use a **
    - Click **Edit Code**, paste the contents of `deployment/middleware_proxy.js`, and click **Save and Deploy**.
 
 3. **Set Worker Secrets:**
-   - Go to **Settings -> Variables**. Add two variables:
+   - Go to **Settings -> Variables**. Add three variables:
      - `API_BASE_URL`: Your Hugging Face Direct URL.
-     - `HF_TOKEN`: Your Hugging Face Access Token (**Make it a "Secret"**).
+     - `HF_TOKEN`: Your Hugging Face Access Token (**Secret**).
+     - `ALLOWED_ORIGIN`: Your Cloudflare Pages URL (e.g., `https://vectra-sdk.pages.dev`).
 
 ---
 
