@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meta-Inference Engine (Professional)</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Outfit', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6', 
+                            600: '#2563eb', 
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="text-slate-900 min-h-screen antialiased flex flex-col items-center justify-center p-4 relative overflow-x-hidden">
+    
+    <!-- Colorful Ambient Blurs for Light Mode -->
+    <div class="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-gradient-to-tr from-cyan-300 via-blue-200 to-transparent mix-blend-multiply filter blur-[100px] opacity-70 animate-pulse-slow pointer-events-none"></div>
+    <div class="absolute bottom-[-10%] right-[-5%] w-[600px] h-[600px] rounded-full bg-gradient-to-bl from-fuchsia-300 via-rose-200 to-transparent mix-blend-multiply filter blur-[120px] opacity-60 pointer-events-none"></div>
+    
+    <!-- Main App Container -->
+    <div class="premium-card w-full max-w-5xl rounded-3xl p-8 relative z-10 min-h-[600px] flex flex-col glass-card border border-white/50 backdrop-blur-sm">
+        
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row items-center justify-between mb-8 pb-4 border-b border-slate-200/60">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-100 to-fuchsia-100 border border-indigo-200 flex items-center justify-center text-indigo-600 shadow-sm">
+                    <i data-lucide="cpu" class="w-7 h-7"></i>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-fuchsia-500 to-rose-500">Vectra Engine</h1>
+                    <p class="text-sm text-slate-500 font-medium tracking-wide">Meta-Inference Capabilities</p>
+                </div>
+            </div>
+            
+            <!-- Stepper Indicators -->
+            <div class="hidden md:flex items-center gap-3 mt-4 md:mt-0 font-display">
+                <div class="step-indicator active" id="indicator-1">1. Setup</div>
+                <div class="w-8 h-[1px] bg-slate-300"></div>
+                <div class="step-indicator" id="indicator-2">2. Ingest</div>
+                <div class="w-8 h-[1px] bg-slate-300"></div>
+                <div class="step-indicator" id="indicator-3">3. Train</div>
+                <div class="w-8 h-[1px] bg-slate-300"></div>
+                <div class="step-indicator" id="indicator-4">4. Results</div>
+            </div>
+        </header>
+
+        <!-- VIEWS WRAPPER -->
+        <div class="relative flex-grow flex flex-col overflow-hidden view-wrapper p-2">
+            
+            <!-- VIEW 1: SETUP -->
+            <section id="view-1" class="view-panel active flex flex-col h-full justify-center">
+                <div class="max-w-2xl mx-auto text-center transform transition-all">
+                    <h2 class="text-4xl md:text-5xl font-display font-bold mb-6 leading-tight text-slate-800">Build custom vision models <br/><span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">at lightning speed</span>.</h2>
+                    <p class="text-lg text-slate-600 mb-10 font-sans">Initialize your few-shot learning session. Define the number of distinct classes you want your model to recognize, and we'll provision the environment instantly.</p>
+                    
+                    <div class="premium-input-group p-8 rounded-2xl max-w-sm mx-auto transition-all duration-300">
+                        <label for="numClasses" class="block text-sm font-semibold tracking-wide text-slate-600 uppercase mb-3">Number of Classes</label>
+                        <div class="flex items-center justify-center gap-4">
+                            <button id="decClasses" class="action-btn-circle">
+                                <i data-lucide="minus" class="w-5 h-5"></i>
+                            </button>
+                            <input type="number" id="numClasses" min="1" max="10" value="1" readonly
+                                class="w-20 text-center text-4xl font-display font-bold bg-transparent border-none text-slate-900 outline-none">
+                            <button id="incClasses" class="action-btn-circle">
+                                <i data-lucide="plus" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+
+                        <!-- Unknown Category Toggle -->
+                        <div class="pt-4 border-t border-slate-200 mt-2 flex items-center justify-center">
+                            <label class="flex items-center cursor-pointer group">
+                                <div class="relative">
+                                    <input type="checkbox" id="useUnknown" class="sr-only">
+                                    <div class="w-10 h-6 bg-slate-300 rounded-full shadow-inner transition-colors"></div>
+                                    <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform duration-300 shadow"></div>
+                                </div>
+                                <div class="ml-3 text-sm text-slate-700 font-medium transition-colors text-left leading-tight">
+                                    Enable Unknown Category <br/> <span class="text-[10px] text-primary-600 font-bold uppercase">(1-class Mode)</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW 2: INGESTION -->
+            <section id="view-2" class="view-panel flex flex-col h-full">
+                <div class="mb-6 flex justify-between items-end">
+                    <div>
+                        <h2 class="text-3xl font-display font-bold text-slate-900">Data Ingestion</h2>
+                        <p class="text-slate-600 mt-1">Upload your Support (Training) and Query (Testing) assets.</p>
+                    </div>
+                </div>
+                
+                <div id="classesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 flex-grow content-start overflow-y-auto custom-scrollbar p-2">
+                    <!-- Class Cards Injected Here -->
+                </div>
+            </section>
+
+            <!-- VIEW 3: CONFIGURATION & TRAINING -->
+            <section id="view-3" class="view-panel flex flex-col h-full justify-center">
+                <div class="max-w-3xl mx-auto text-center w-full">
+                    <h2 class="text-3xl font-display font-bold mb-4 text-slate-900">Select Architecture</h2>
+                    <p class="text-slate-600 mb-6">Choose the foundation model. Heavier models offer more accuracy but compute slower.</p>
+                    
+                    <div class="mb-8 bg-slate-50/80 backdrop-blur-md p-5 rounded-xl border border-indigo-100/50 text-left text-[13px] text-slate-700 leading-relaxed shadow-sm">
+                        <h4 class="font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-fuchsia-600 mb-2 font-display text-sm tracking-wide uppercase">Architecture Guide</h4>
+                        <ul class="list-disc pl-5 space-y-1.5 opacity-90">
+                            <li><strong class="text-slate-900 font-semibold">ResNet (18, 34, 50):</strong> Reliable & robust. Deeper networks (higher numbers) yield better accuracy at the cost of processing speed.</li>
+                            <li><strong class="text-slate-900 font-semibold">MobileNet (V2, V3):</strong> Highly optimized for edge/mobile devices. Extremely lightweight.</li>
+                            <li><strong class="text-slate-900 font-semibold">EfficientNet (B0, B1):</strong> State-of-the-art scaling technique for maximum parameter efficiency.</li>
+                            <li><strong class="text-slate-900 font-semibold">DenseNet (121, 169):</strong> Excellent for complex visual patterns.</li>
+                        </ul>
+                    </div>
+
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-10 overflow-y-auto custom-scrollbar p-1 max-h-[40vh]">
+                        <!-- Model Options -->
+                        <label class="model-option py-4 px-2 rounded-xl cursor-pointer transition-all flex flex-col items-center justify-center relative overflow-hidden text-center">
+                            <input type="radio" name="backbone" value="resnet18" class="hidden" checked>
+                            <h3 class="font-display font-bold text-[13px] text-slate-800 z-10">ResNet-18</h3>
+                            <span class="text-[10px] font-semibold text-primary-600 mt-1 z-10 bg-primary-50 px-2 py-0.5 rounded border border-primary-100">45 MB</span>
+                        </label>
+                        <label class="model-option py-4 px-2 rounded-xl cursor-pointer transition-all flex flex-col items-center justify-center relative overflow-hidden text-center">
+                            <input type="radio" name="backbone" value="resnet34" class="hidden">
+                            <h3 class="font-display font-bold text-[13px] text-slate-800 z-10">ResNet-34</h3>
+                            <span class="text-[10px] font-semibold text-primary-600 mt-1 z-10 bg-primary-50 px-2 py-0.5 rounded border border-primary-100">83 MB</span>
+                        </label>
+                        <label class="model-option py-4 px-2 rounded-xl cursor-pointer transition-all flex flex-col items-center justify-center relative overflow-hidden text-center">
+                            <input type="radio" name="backbone" value="resnet50" class="hidden">
+                            <h3 class="font-display font-bold text-[13px] text-slate-800 z-10">ResNet-50</h3>
+                            <span class="text-[10px] font-semibold text-primary-600 mt-1 z-10 bg-primary-50 px-2 py-0.5 rounded border border-primary-100">98 MB</span>
+                        </label>
+                        <label class="model-option py-4 px-2 rounded-xl cursor-pointer transition-all flex flex-col items-center justify-center relative overflow-hidden text-center">
+                            <input type="radio" name="backbone" value="mobilenet_v2" class="hidden">
+                            <h3 class="font-display font-bold text-[13px] text-slate-800 z-10">MobileNet V2</h3>
+                            <span class="text-[10px] font-semibold text-primary-600 mt-1 z-10 bg-primary-50 px-2 py-0.5 rounded border border-primary-100">14 MB</span>
+                        </label>
+                        <label class="model-option py-4 px-2 rounded-xl cursor-pointer transition-all flex flex-col items-center justify-center relative overflow-hidden text-center">
+                            <input type="radio" name="backbone" value="mobilenet_v3_small" class="hidden">
+                            <h3 class="font-display font-bold text-[13px] text-slate-800 z-10">MobileNetV3 S</h3>
+                            <span class="text-[10px] font-semibold text-primary-600 mt-1 z-10 bg-primary-50 px-2 py-0.5 rounded border border-primary-100">10 MB</span>
+                        </label>
+                        <label class="model-option py-4 px-2 rounded-xl cursor-pointer transition-all flex flex-col items-center justify-center relative overflow-hidden text-center">
+                            <input type="radio" name="backbone" value="mobilenet_v3_large" class="hidden">
+                            <h3 class="font-display font-bold text-[13px] text-slate-800 z-10">MobileNetV3 L</h3>
+                            <span class="text-[10px] font-semibold text-primary-600 mt-1 z-10 bg-primary-50 px-2 py-0.5 rounded border border-primary-100">16 MB</span>
+                        </label>
+                        <label class="model-option py-4 px-2 rounded-xl cursor-pointer transition-all flex flex-col items-center justify-center relative overflow-hidden text-center">
+                            <input type="radio" name="backbone" value="efficientnet_b0" class="hidden">
+                            <h3 class="font-display font-bold text-[13px] text-slate-800 z-10">Efficient B0</h3>
+                            <span class="text-[10px] font-semibold text-primary-600 mt-1 z-10 bg-primary-50 px-2 py-0.5 rounded border border-primary-100">20 MB</span>
+                        </label>
+                        <label class="model-option py-4 px-2 rounded-xl cursor-pointer transition-all flex flex-col items-center justify-center relative overflow-hidden text-center">
+                            <input type="radio" name="backbone" value="efficientnet_b1" class="hidden">
+                            <h3 class="font-display font-bold text-[13px] text-slate-800 z-10">Efficient B1</h3>
+                            <span class="text-[10px] font-semibold text-primary-600 mt-1 z-10 bg-primary-50 px-2 py-0.5 rounded border border-primary-100">32 MB</span>
+                        </label>
+                        <label class="model-option py-4 px-2 rounded-xl cursor-pointer transition-all flex flex-col items-center justify-center relative overflow-hidden text-center">
+                            <input type="radio" name="backbone" value="densenet121" class="hidden">
+                            <h3 class="font-display font-bold text-[13px] text-slate-800 z-10">DenseNet-121</h3>
+                            <span class="text-[10px] font-semibold text-primary-600 mt-1 z-10 bg-primary-50 px-2 py-0.5 rounded border border-primary-100">33 MB</span>
+                        </label>
+                        <label class="model-option py-4 px-2 rounded-xl cursor-pointer transition-all flex flex-col items-center justify-center relative overflow-hidden text-center">
+                            <input type="radio" name="backbone" value="densenet169" class="hidden">
+                            <h3 class="font-display font-bold text-[13px] text-slate-800 z-10">DenseNet-169</h3>
+                            <span class="text-[10px] font-semibold text-primary-600 mt-1 z-10 bg-primary-50 px-2 py-0.5 rounded border border-primary-100">57 MB</span>
+                        </label>
+                    </div>
+
+                    <!-- Training Status Area (Hidden initially) -->
+                    <div id="trainingStatus" class="hidden bg-white rounded-xl p-8 max-w-lg mx-auto border border-slate-200 shadow-lg">
+                        <div class="loader-accent mx-auto mb-6"></div>
+                        <h3 id="statusText" class="text-xl font-display font-bold text-slate-800 mb-2">Engaging Pipeline...</h3>
+                        <p id="statusSubtext" class="text-sm text-slate-500">Initializing parameters.</p>
+                        <div class="w-full bg-slate-100 rounded-full h-2 mt-6 overflow-hidden">
+                            <div id="progressBar" class="bg-primary-500 h-2 rounded-full w-0 transition-all duration-300"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW 4: RESULTS -->
+            <section id="view-4" class="view-panel flex flex-col h-full">
+                <div class="flex justify-between items-center mb-8">
+                    <div>
+                        <h2 class="text-3xl font-display font-bold text-slate-900 mb-1">Inference Complete</h2>
+                        <p class="text-slate-600">Review metrics and download the trained prototype.</p>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <button id="resetBtn" class="nav-btn text-sm px-5 py-2.5 flex items-center gap-2">
+                            <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                            Return Home
+                        </button>
+                        <button id="retrainBtn" class="nav-btn text-sm px-5 py-2.5 flex items-center gap-2">
+                            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                            Retrain (<span id="retriesLeftText" class="font-bold">3</span> Left)
+                        </button>
+                        <button id="downloadBtn" class="premium-btn text-sm px-5 py-2.5 flex items-center gap-2">
+                            <i data-lucide="download" class="w-4 h-4"></i>
+                            Export
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-grow overflow-y-auto custom-scrollbar pr-2">
+                    <!-- Metrics side -->
+                    <div class="lg:col-span-1 flex flex-col gap-6">
+                        <div class="bg-white p-8 rounded-3xl flex flex-col items-center justify-center relative overflow-hidden shadow-sm border border-slate-200">
+                            <p class="text-slate-500 font-display uppercase tracking-widest text-xs font-semibold mb-2 z-10">Total Accuracy</p>
+                            <div class="relative w-32 h-32 flex items-center justify-center z-10 mb-2">
+                                <!-- Background circle -->
+                                <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                                  <path class="text-slate-100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="4"></path>
+                                  <!-- Progress circle -->
+                                  <path id="accuracyGaugeCircle" class="text-primary-500 transition-all duration-1000 ease-out" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"></path>
+                                </svg>
+                                <div class="absolute flex flex-col items-center justify-center">
+                                    <h1 id="resAccuracy" class="text-4xl font-display font-extrabold text-transparent bg-clip-text bg-gradient-to-br from-indigo-600 to-cyan-500">0%</h1>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-white p-5 rounded-2xl flex flex-col items-center justify-center border border-slate-200 shadow-sm">
+                                <p class="text-slate-500 text-[10px] font-display uppercase tracking-widest mb-1">Architecture</p>
+                                <p id="resBackbone" class="text-lg font-bold capitalize text-slate-800">ResNet</p>
+                            </div>
+                            <div class="bg-white p-5 rounded-2xl flex flex-col items-center justify-center border border-slate-200 shadow-sm">
+                                <p class="text-slate-500 text-[10px] font-display uppercase tracking-widest mb-1">Classes</p>
+                                <p id="resClassesCount" class="text-lg font-bold text-slate-800">0</p>
+                            </div>
+                        </div>
+
+                        <!-- Live Evaluation Hub -->
+                        <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col gap-4">
+                            <h3 class="font-display font-bold text-sm tracking-widest uppercase text-slate-800">Live Evaluation Hub</h3>
+                            <div id="evalDropZone" class="relative rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 flex flex-col items-center justify-center p-6 cursor-pointer hover:border-primary-400 hover:bg-primary-50 transition-all group">
+                                <input type="file" id="evalInput" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                                <div id="evalPreview" class="hidden absolute inset-0 rounded-2xl overflow-hidden">
+                                    <img src="" class="w-full h-full object-cover opacity-80">
+                                </div>
+                                <div class="text-center z-10">
+                                    <i data-lucide="upload-cloud" class="w-8 h-8 text-slate-400 mb-2 mx-auto group-hover:text-primary-500 transition-colors"></i>
+                                    <p class="text-xs font-medium text-slate-500 group-hover:text-primary-600">Drop image to test</p>
+                                </div>
+                            </div>
+                            <div id="evalResult" class="hidden bg-slate-50 rounded-xl p-4 border border-slate-200 animate-fade-up">
+                                <p class="text-[10px] uppercase tracking-widest text-slate-500 mb-1">Inferred Label</p>
+                                <p id="evalLabel" class="text-xl font-display font-bold text-slate-800">Loading...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Table side -->
+                    <div class="lg:col-span-2 bg-white rounded-3xl p-6 flex flex-col border border-slate-200 shadow-sm h-fit">
+                        <h3 class="font-display font-semibold text-base text-slate-800 border-b border-slate-200 pb-3 mb-3">Prediction Matrix</h3>
+                        <div class="overflow-y-auto flex-grow custom-scrollbar pr-2 max-h-[500px]">
+                            <table class="w-full text-left">
+                                <thead>
+                                    <tr class="text-[11px] uppercase tracking-wider text-slate-500 border-b border-slate-100">
+                                        <th class="pb-3 font-semibold px-2">Sample</th>
+                                        <th class="pb-3 font-semibold px-2">Ground Truth</th>
+                                        <th class="pb-3 font-semibold px-2">Prediction</th>
+                                        <th class="pb-3 font-semibold text-right px-2">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="predictionsTableBody" class="divide-y divide-slate-100 text-sm text-slate-700">
+                                    <!-- Injected by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Navigation Footer -->
+        <footer class="mt-8 pt-4 border-t border-slate-200/60 flex justify-between items-center h-14">
+            <button id="btnBack" class="nav-btn hidden text-sm text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 hover:border-indigo-200 transition-colors">
+                <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                Go Back
+            </button>
+            <div class="flex-grow"></div>
+            <button id="btnNext" class="premium-btn text-base px-8 py-2.5 flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-700 hover:to-cyan-600 border-none shadow-[0_8px_16px_rgba(99,102,241,0.25)] text-white font-semibold rounded-xl">
+                Continue
+                <i data-lucide="chevron-right" class="w-5 h-5"></i>
+            </button>
+        </footer>
+    </div>
+
+    <!-- Class Card Template -->
+    <template id="classCardTemplate">
+        <div class="class-card bg-white rounded-2xl border border-slate-200 hover:border-primary-300 transition-colors shadow-sm flex flex-col relative overflow-hidden">
+            <!-- Header section of card -->
+            <div class="p-4 border-b border-slate-100 bg-slate-50 flex items-center gap-3">
+                <div class="w-7 h-7 rounded bg-white border border-slate-200 text-primary-600 font-display font-bold flex items-center justify-center text-xs class-index">
+                    1
+                </div>
+                <input type="text" class="class-name-input flex-grow bg-transparent text-slate-900 font-display font-semibold text-base focus:outline-none placeholder-slate-400" placeholder="Class Name...">
+                
+                <button class="remove-class-btn text-slate-400 hover:text-red-500 transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="p-4 grid grid-rows-2 gap-3 flex-grow bg-white">
+                <!-- Support Zone -->
+                <div class="drop-zone support-zone relative rounded-xl border border-dashed border-slate-300 bg-slate-50 flex flex-col items-center justify-center p-3 cursor-pointer group hover:border-primary-400 hover:bg-primary-50 transition-all overflow-hidden hidden-scroll">
+                    <input type="file" multiple accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 file-input">
+                    <div class="zone-content text-center flex flex-col items-center">
+                        <i data-lucide="inbox" class="w-5 h-5 text-slate-400 mb-1 group-hover:text-primary-500 transition-colors"></i>
+                        <p class="text-[11px] font-medium text-slate-500 group-hover:text-primary-600 transition-colors">Support Images</p>
+                        <p class="text-[10px] text-slate-400 mt-1 count-support">0 items added</p>
+                    </div>
+                </div>
+
+                <!-- Query Zone -->
+                <div class="drop-zone query-zone relative rounded-xl border border-dashed border-slate-300 bg-slate-50 flex flex-col items-center justify-center p-3 cursor-pointer group hover:border-purple-400 hover:bg-purple-50 transition-all overflow-hidden hidden-scroll">
+                    <input type="file" multiple accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 file-input">
+                    <div class="zone-content text-center flex flex-col items-center">
+                        <i data-lucide="crosshair" class="w-5 h-5 text-slate-400 mb-1 group-hover:text-purple-500 transition-colors"></i>
+                        <p class="text-[11px] font-medium text-slate-500 group-hover:text-purple-600 transition-colors">Query Images</p>
+                        <p class="text-[10px] text-slate-400 mt-1 count-query">0 items added</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <script>
+        // These will be replaced during Cloudflare Pages build if you use a build script
+        // or you can set them manually here.
+        window.API_BASE_URL = "__API_BASE_URL__";
+        window.HF_TOKEN = "__HF_TOKEN__";
+    </script>
+    <script src="app.js"></script>
+</body>
+</html>

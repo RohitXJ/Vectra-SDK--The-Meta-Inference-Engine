@@ -1,0 +1,103 @@
+import os
+import shutil
+import tempfile
+import re
+import time
+
+# Roots for data storage - using a local directory for better persistence in containers
+BASE_TEMP_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data", "sessions"))
+os.makedirs(BASE_TEMP_DIR, exist_ok=True)
+
+def sanitize_name(name):
+    """Sanitize class or file names for filesystem safety."""
+    name = re.sub(r'[^a-zA-Z0-9_\-.]', '_', name)
+    return name.strip()
+
+def get_token_root(token):
+    """Get the root temp folder for a specific token."""
+    path = os.path.join(BASE_TEMP_DIR, sanitize_name(token))
+    os.makedirs(path, exist_ok=True)
+    return path
+
+def get_session_paths(token):
+    """Get support and query directory paths for a session."""
+    root = get_token_root(token)
+    support_path = os.path.join(root, "support")
+    query_path = os.path.join(root, "query")
+    export_path = os.path.join(root, "export")
+    
+    os.makedirs(support_path, exist_ok=True)
+    os.makedirs(query_path, exist_ok=True)
+    os.makedirs(export_path, exist_ok=True)
+    
+    return {
+        "root": root,
+        "support": support_path,
+        "query": query_path,
+        "export": export_path
+    }
+
+def save_upload_image(token, category, class_name, file_name, content):
+    """Saves an uploaded image into the token-specific class folder."""
+    paths = get_session_paths(token)
+    target_dir = os.path.join(paths[category], sanitize_name(class_name))
+    os.makedirs(target_dir, exist_ok=True)
+    
+    safe_file_name = sanitize_name(file_name)
+    save_path = os.path.join(target_dir, safe_file_name)
+    
+    with open(save_path, "wb") as f:
+        f.write(content)
+    return save_path
+
+def clear_session_data(token):
+    """Clears all temporary data associated with a token."""
+    root = get_token_root(token)
+    if os.path.exists(root):
+        shutil.rmtree(root)
+        return True
+    return False
+
+def get_session_retrain_count(token):
+    """Gets the retrain count for a session from its local config."""
+    paths = get_session_paths(token)
+    count_file = os.path.join(paths["root"], "retrain_count.txt")
+    if os.path.exists(count_file):
+        with open(count_file, "r") as f:
+            try:
+                return int(f.read().strip())
+            except:
+                return 0
+    return 0
+
+def increment_session_retrain_count(token):
+    """Increments and saves the retrain count for a session."""
+    count = get_session_retrain_count(token) + 1
+    paths = get_session_paths(token)
+    count_file = os.path.join(paths["root"], "retrain_count.txt")
+    with open(count_file, "w") as f:
+        f.write(str(count))
+    return count
+
+def cleanup_old_sessions(max_age_seconds=3600):
+    """
+    Scans BASE_TEMP_DIR and deletes session folders older than max_age_seconds.
+    Default is 1 hour (3600s).
+    """
+    now = time.time()
+    if not os.path.exists(BASE_TEMP_DIR):
+        return
+
+    for token_folder in os.listdir(BASE_TEMP_DIR):
+        folder_path = os.path.join(BASE_TEMP_DIR, token_folder)
+        if not os.path.isdir(folder_path):
+            continue
+            
+        # Check folder last modified time
+        mtime = os.path.getmtime(folder_path)
+        if (now - mtime) > max_age_seconds:
+            try:
+                shutil.rmtree(folder_path)
+                print(f"Cleanup: Deleted expired session {token_folder}")
+            except Exception as e:
+                print(f"Cleanup Error: {e}")
