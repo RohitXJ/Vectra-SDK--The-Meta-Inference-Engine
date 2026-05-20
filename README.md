@@ -43,7 +43,7 @@ Located in `vectra_sdk/`, this is a standalone library for developers.
 ### For Development (Local)
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/yourusername/Vectra-SDK.git
+   git clone https://github.com/RohitXJ/Vectra-SDK--The-Meta-Inference-Engine.git
    cd Vectra-SDK
    ```
 2. **Set up a virtual environment:**
