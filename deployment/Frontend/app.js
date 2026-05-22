@@ -158,8 +158,13 @@ function setupEventListeners() {
     });
 
     // Live Eval
+    setupZone(dom.evalDropZone, null, 'eval', null);
     dom.evalInput.addEventListener('change', e => {
-        if(e.target.files && e.target.files[0]) runLiveEval(e.target.files[0]);
+        if(e.target.files && e.target.files[0]) {
+            runLiveEval(e.target.files[0]);
+            // Clear value so the same file can be selected again
+            e.target.value = "";
+        }
     });
 
     // Reset Flow
@@ -321,6 +326,11 @@ function setupZone(el, obj, type, countEl) {
         const valid = Array.from(files).filter(f => f.type.startsWith('image/'));
         if(valid.length < files.length) showToast("Images only", "error");
         
+        if (type === 'eval') {
+            if (valid.length > 0) runLiveEval(valid[0]);
+            return;
+        }
+
         if (type === 'support') obj.supportFiles.push(...valid);
         else obj.queryFiles.push(...valid);
         

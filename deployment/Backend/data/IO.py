@@ -34,11 +34,10 @@ def get_transform(image_mode):
     """Returns standard ImageNet-style transforms based on image mode."""
     if image_mode == 'L':  # Grayscale
         return transforms.Compose([
-            transforms.Grayscale(num_output_channels=3),  # Convert to 3-channel
             transforms.Resize((224, 224)),
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                 std=[0.229, 0.224, 0.225])
+            transforms.Normalize(mean=[0.456],  # Single channel mean (approx ImageNet Green)
+                                 std=[0.224])
         ])
     else:  # RGB
         return transforms.Compose([
