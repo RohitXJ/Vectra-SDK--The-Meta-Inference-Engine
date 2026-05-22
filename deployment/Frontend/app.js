@@ -159,19 +159,12 @@ function setupEventListeners() {
 
     // Live Eval
     setupZone(dom.evalDropZone, null, 'eval', null);
-    dom.evalInput.addEventListener('change', e => {
-        if(e.target.files && e.target.files[0]) {
-            runLiveEval(e.target.files[0]);
-            // Clear value so the same file can be selected again
-            e.target.value = "";
-        }
-    });
 
     // Reset Flow
     dom.resetBtn.addEventListener('click', async () => {
         if(state.sessionToken) {
             try {
-                await fetch(`${API_BASE}/session/${state.sessionToken}`, { method: 'DELETE' });
+                await authenticatedFetch(`${API_BASE}/session/${state.sessionToken}`, { method: 'DELETE' });
             } catch(e) { console.warn("Failed to delete session", e) }
             state.sessionToken = null; // prevents beacon on unload
         }
@@ -320,7 +313,12 @@ function setupZone(el, obj, type, countEl) {
     ['dragleave', 'drop'].forEach(e => el.addEventListener(e, ev => { ev.preventDefault(); el.classList.remove('drag-over'); }));
     
     el.addEventListener('drop', e => handle(e.dataTransfer.files));
-    input.addEventListener('change', e => handle(e.target.files));
+    if (input) {
+        input.addEventListener('change', e => {
+            handle(e.target.files);
+            e.target.value = "";
+        });
+    }
 
     function handle(files) {
         const valid = Array.from(files).filter(f => f.type.startsWith('image/'));
@@ -375,7 +373,7 @@ async function runTrainingPipeline() {
         fd.append("backbone_name", backbone);
         fd.append("use_unknown", useUnknown);
 
-        const res = await fetch(`${API_BASE}/train`, { method: 'POST', body: fd });
+        const res = await authenticatedFetch(`${API_BASE}/train`, { method: 'POST', body: fd });
         if(!res.ok) throw new Error("Training API failure");
         const results = await res.json();
         
@@ -404,7 +402,7 @@ async function uploadData(cName, cat, files) {
     fd.append("category", cat);
     fd.append("class_name", cName);
     files.forEach(f => fd.append("files", f));
-    const r = await fetch(`${API_BASE}/upload`, { method:'POST', body: fd });
+    const r = await authenticatedFetch(`${API_BASE}/upload`, { method:'POST', body: fd });
     if(!r.ok) throw new Error(`Upload failed for ${cName}`);
 }
 
